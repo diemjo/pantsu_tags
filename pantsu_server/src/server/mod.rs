@@ -1,15 +1,15 @@
+use crate::Context;
 use crate::common::result::Result;
-use crate::config::ServerConfig;
 
 mod routes;
 
-pub async fn launch_server(config: ServerConfig) -> Result<()> {
+pub async fn launch_server(context: Context) -> Result<()> {
     let figment = rocket::Config::figment()
-        .merge(("port", config.server_port));
+        .merge(("port", context.config.server_port));
 
     let _rocket = rocket::custom(figment)
         .mount("/api", routes::get_routes())
-        .manage(config)
+        .manage(context)
         .launch()
         .await?;
 

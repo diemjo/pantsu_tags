@@ -5,6 +5,7 @@ use rocket::response::content::RawJson;
 use rocket::response::Responder;
 use rocket::serde::json::json;
 use rocket::serde::Serialize;
+use rocket::tokio::sync::{mpsc, oneshot};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -19,6 +20,29 @@ pub enum Error {
     // rocket
     #[error("rocket error: {0}")]
     RocketError(#[from] rocket::Error),
+
+    // channel
+    #[error("channel communication error: {0}")]
+    WorkerCommunicationError(String),
+
+    #[error("received an unexpected Result: {0}, expected: {1}")]
+    UnexpectedResultError(String, String)
+}
+
+impl <T> From<mpsc::error::SendError<T>> for Error {
+    fn from(value: mpsc::error::SendError<T>) -> Self {
+        Self::WorkerCommunicationError(format!("send failed: {}", value))
+    }
+}
+
+impl From<oneshot::error::RecvError> for Error {
+    fn from(value: oneshot::error::RecvError) -> Self {
+        Self::WorkerCommunicationError(format!("receive failed: {}", value))
+    }
+}
+
+pub fn channel_receive_error() -> Error {
+    return Error::WorkerCommunicationError("receive failed: channel closed".to_string());
 }
 
 impl<'r, 'o: 'r> Responder<'r, 'o> for Error {
