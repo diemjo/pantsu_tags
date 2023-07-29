@@ -3,7 +3,7 @@ use std::future::Future;
 use rocket::{tokio::sync::{oneshot, mpsc::{Sender, Receiver, channel}}, futures::StreamExt};
 use tokio_stream::wrappers::ReceiverStream;
 
-use crate::common::{result::Result, error::{Error, self}};
+use crate::common::{result::Result, error::{self}};
 
 struct JobRequest<J, R> {
     job: J,
@@ -24,12 +24,6 @@ impl <J, R> WorkerConnectionTx<J, R> {
         self.request_tx.send(request).await?;
         let response: R = response_rx.await?;
         return Ok(response);
-    }
-}
-
-impl <J, R> Clone for WorkerConnectionTx<J, R> {
-    fn clone(&self) -> Self {
-        Self { request_tx: self.request_tx.clone() }
     }
 }
 

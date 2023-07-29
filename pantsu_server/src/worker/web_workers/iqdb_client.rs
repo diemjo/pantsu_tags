@@ -1,5 +1,3 @@
-use std::clone;
-
 use async_trait::async_trait;
 
 use crate::{common::{result::Result, error::Error}, worker::worker_connection::WorkerConnectionTx};
@@ -25,12 +23,6 @@ pub struct DefaultIqdbClient {
 impl DefaultIqdbClient {
     pub fn new(worker_connection: WorkerConnectionTx<IqdbJob, Result<IqdbResponse>>) -> Self {
         return DefaultIqdbClient { worker_connection }
-    }
-}
-
-impl Clone for DefaultIqdbClient {
-    fn clone(&self) -> Self {
-        Self { worker_connection: self.worker_connection.clone() }
     }
 }
 
