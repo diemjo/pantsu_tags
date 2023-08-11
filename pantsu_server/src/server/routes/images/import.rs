@@ -1,4 +1,6 @@
 use async_trait::async_trait;
+use rocket::form::{FromForm, Form};
+use rocket::fs::TempFile;
 use rocket::{Data, Request, Route, State};
 use rocket::data::{ByteUnit, FromData, Outcome};
 use rocket::response::content;
@@ -6,10 +8,19 @@ use crate::common::error::Error;
 
 use crate::common::result::{Result, wrap_ok};
 use crate::Context;
+use crate::image::ImageId;
 
 pub struct ImageData {
     bytes: Vec<u8>,
 }
+
+
+#[derive(FromForm)]
+pub struct ImageImport<'r> {
+    pub image: TempFile<'r>,
+    pub image_id: ImageId,
+}
+
 
 #[async_trait]
 impl<'r> FromData<'r> for ImageData {
@@ -23,7 +34,7 @@ impl<'r> FromData<'r> for ImageData {
             },
             None => return Error::MissingParameterError("hash".to_string()).to_outcome()
         }; */
-        let bytes = match data.open(ByteUnit::Mebibyte(20)).into_bytes().await { // TODO: move to config
+        let bytes = match data.open(ByteUnit::Mebibyte(20)).into_bytes().await { // TODO: move max filesize to config
             Ok(bytes) => {
                 if bytes.is_complete() {
                     bytes.value
@@ -48,9 +59,18 @@ pub fn get_routes() -> Vec<Route> {
     ]
 }
 
-#[rocket::post("/images/import?<hash>", data = "<image>")]
-pub fn import(context: &State<Context>, hash: Option<String>, image: ImageData) -> Result<content::RawJson<String>> {
-    let provided_hash = hash.filter(|s| !s.is_empty())
-        .ok_or_else(|| Error::MissingParameterError("hash".to_string()))?;
-    Ok(wrap_ok(format!("hehe '{}'", provided_hash)))
+#[rocket::post("/images/import", data = "<image_form>")]
+pub fn import(context: &State<Context>, image_form: Form<ImageImport>) -> Result<content::RawJson<String>> {
+    /*let image_form = match image_form {
+        Ok(image_form) => Ok(image_form),
+        Err(e) => match e[0].kind {
+            ErrorKind::Custom(e) => match e.downcast::<crate::common::error::Error>() {
+                Ok(e) => Err(*e),
+                _ => Err(Error::BadRequestError("".to_string())),
+            },
+            _ => Err(Error::BadRequestError("".to_string())),
+            
+        }
+    }?;*/
+    Ok(wrap_ok(format!("hehe '{}'", image_form.image_id.get_id_hash())))
 }

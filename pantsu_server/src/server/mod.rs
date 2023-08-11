@@ -1,6 +1,7 @@
 use crate::Context;
 use crate::common::result::Result;
 
+mod forms;
 mod routes;
 
 pub async fn launch_server(context: Context) -> Result<()> {

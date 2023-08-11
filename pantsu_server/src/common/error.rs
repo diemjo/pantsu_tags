@@ -41,7 +41,11 @@ pub enum Error {
     WorkerCommunicationError(String),
 
     #[error("received an unexpected Result: {0}, expected: {1}")]
-    UnexpectedResultError(String, String)
+    UnexpectedResultError(String, String),
+
+    // image
+    #[error("Provided image id is invalid: {0}")]
+    InvalidImageId(String),
 }
 
 impl <T> From<mpsc::error::SendError<T>> for Error {
@@ -71,7 +75,8 @@ impl Error {
         match self {
             Self::RequestTooLargeError(_) |
             Self::BadRequestError(_) |
-            Self::MissingParameterError(_) => Status::BadRequest,
+            Self::MissingParameterError(_) |
+            Self::InvalidImageId(_) => Status::BadRequest,
             _ => Status::InternalServerError,
         }
     }

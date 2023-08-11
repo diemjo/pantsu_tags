@@ -8,6 +8,7 @@ use crate::config::ServerConfig;
 
 mod common;
 mod config;
+mod image;
 mod server;
 mod worker;
 
