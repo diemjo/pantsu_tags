@@ -1,7 +1,11 @@
-use regex::Regex;
-use crate::common::error::Error;
+use std::fmt::{Display, Formatter, Write};
 
-#[derive(Debug, PartialEq, Eq)]
+use regex::Regex;
+
+use crate::common::error::Error;
+use crate::common::result::Result;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImageId {
     id_hash: String,
     perceptual_hash: String,
@@ -22,12 +26,16 @@ impl ImageId {
     pub fn get_perceptual_hash(&self) -> &str {
         &self.perceptual_hash
     }
+
+    pub fn filename_format(&self) -> String {
+        format!("{}-{}", self.id_hash, self.perceptual_hash)
+    }
 }
 
 impl TryFrom<&str> for ImageId {
     type Error = Error;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    fn try_from(value: &str) -> Result<Self> {
         let regex = Regex::new(r"^(?<id>[[:xdigit:]]{16})-(?<perceptual>[[:xdigit:]]{36})$").unwrap();
         let captures = regex.captures(value.trim())
             .ok_or_else(|| Error::InvalidImageId(value.to_string()))?;
@@ -37,6 +45,19 @@ impl TryFrom<&str> for ImageId {
             perceptual_hash: captures["perceptual"].to_string(),
         })
     }
+}
+
+impl Display for ImageId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.filename_format())
+    }
+}
+
+pub fn verify_image_id(provided: &ImageId, expected: &ImageId) -> Result<()> {
+    if provided != expected {
+        return Err(Error::ImageIdDoesNotMatch(provided.clone(), expected.clone()))
+    }
+    Ok(())
 }
 
 #[cfg(test)]

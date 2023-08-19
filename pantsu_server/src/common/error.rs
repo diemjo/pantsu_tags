@@ -15,6 +15,7 @@ use rocket::tokio::sync::{mpsc, oneshot};
 use thiserror::Error;
 
 use crate::common::option_ext::OptionExt;
+use crate::image::image_id::ImageId;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -51,6 +52,9 @@ pub enum Error {
     // image
     #[error("Provided image id is invalid: {0}")]
     InvalidImageId(String),
+
+    #[error("Provided image id '{0}' is not equal to the actual image id: '{1}'")]
+    ImageIdDoesNotMatch(ImageId, ImageId),
 
     #[error("Provided image is invalid: {0}")]
     InvalidImageFile(#[from] ImageError),

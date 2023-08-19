@@ -1,36 +1,15 @@
+use std::fmt::Display;
 use chrono::{DateTime, Utc};
 use image::GenericImageView;
 
 use crate::common::error::Error;
 use crate::common::result::Result;
 use crate::image::image_id::ImageId;
+use crate::image::image_format::ImageFormat;
 
 pub mod hash;
+pub mod image_format;
 pub mod image_id;
-
-enum ImageFormat {
-    PNG, JPG,
-}
-
-impl ImageFormat {
-    fn extension(&self) -> String {
-        match self {
-            ImageFormat::PNG => "png".to_string(),
-            ImageFormat::JPG => "jpg".to_string(),
-        }
-    }
-}
-
-impl TryFrom<image::ImageFormat> for ImageFormat {
-    type Error = Error;
-    fn try_from(format: image::ImageFormat) -> Result<Self> {
-        Ok(match format {
-            image::ImageFormat::Png => ImageFormat::PNG,
-            image::ImageFormat::Jpeg => ImageFormat::JPG,
-            f => return Err(Error::UnsupportedImageFormat(f.to_mime_type().to_string()))
-        })
-    }
-}
 
 pub struct PantsuImage {
     id: ImageId,
@@ -45,7 +24,7 @@ impl PantsuImage {
     }
 
     pub fn filename(&self) -> String {
-        format!("{}-{}.{}", self.id.get_id_hash(), self.id.get_perceptual_hash(), self.format.extension())
+        format!("{}.{}", self.id.filename_format(), self.format.extension())
     }
 }
 
