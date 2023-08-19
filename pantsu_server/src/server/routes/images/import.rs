@@ -21,9 +21,12 @@ pub fn get_routes() -> Vec<Route> {
 
 #[rocket::post("/images/import", data = "<image_form>")]
 pub fn import(context: &State<Context>, image_form: form::Result<Form<ImageImport>>) -> Result<content::RawJson<String>> {
-    let image_form = image_form?.into_inner();
-    let image = PantsuImage::try_from(image_form.image_file)?;
-    image_id::verify_image_id(&image_form.image_id, image.id())?;
+    import_impl(context, image_form?.into_inner())
+}
+
+pub fn import_impl(context: &Context, image_import: ImageImport) -> Result<content::RawJson<String>> {
+    let image = PantsuImage::try_from(image_import.image_file)?;
+    image_id::verify_image_id(&image_import.image_id, image.id())?;
     // TODO: import: check if file exists (in db), import to image directory, add to db
-    Ok(wrap_ok(format!("hehe '{}' '{}'", image_form.image_id.get_id_hash(), image.filename())))
+    Ok(wrap_ok(format!("hehe '{}' '{}'", image_import.image_id.get_id_hash(), image.filename())))
 }
