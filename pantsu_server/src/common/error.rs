@@ -1,8 +1,11 @@
+use std::fmt::Display;
 use std::iter::Map;
 
+use image::ImageError;
+use rocket::{form, Response};
 use rocket::data::Outcome;
+use rocket::form::error::ErrorKind;
 use rocket::http::Status;
-use rocket::Response;
 use rocket::outcome::IntoOutcome;
 use rocket::response::content::RawJson;
 use rocket::response::Responder;
@@ -10,6 +13,8 @@ use rocket::serde::json::json;
 use rocket::serde::Serialize;
 use rocket::tokio::sync::{mpsc, oneshot};
 use thiserror::Error;
+
+use crate::common::option_ext::OptionExt;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -31,7 +36,7 @@ pub enum Error {
     NotAnImageError(),
 
     #[error("request data is too large, max allowed size is {0}KB")]
-    RequestTooLargeError(usize),
+    RequestTooLargeError(u64),
 
     #[error("missing required parameter: {0}")]
     MissingParameterError(String),
@@ -46,6 +51,12 @@ pub enum Error {
     // image
     #[error("Provided image id is invalid: {0}")]
     InvalidImageId(String),
+
+    #[error("Provided image is invalid: {0}")]
+    InvalidImageFile(#[from] ImageError),
+
+    #[error("Provided image format is unsupported: {0}")]
+    UnsupportedImageFormat(String),
 }
 
 impl <T> From<mpsc::error::SendError<T>> for Error {
@@ -57,6 +68,24 @@ impl <T> From<mpsc::error::SendError<T>> for Error {
 impl From<oneshot::error::RecvError> for Error {
     fn from(value: oneshot::error::RecvError) -> Self {
         Self::WorkerCommunicationError(format!("receive failed: {}", value))
+    }
+}
+
+impl<'r> From<form::Errors<'r>> for Error {
+    fn from(value: form::Errors) -> Self {
+        let error = match value.into_iter().next() {
+            Some(error) => error,
+            None => return Error::BadRequestError("Error without error kind encountered".to_string()),
+        };
+        match error.kind {
+            ErrorKind::Custom(box_error) => match box_error.downcast::<Error>() {
+                Ok(e) => *e,
+                Err(e) => return Error::BadRequestError(e.to_string()),
+            }
+            ErrorKind::Missing => return Error::MissingParameterError(error.name.unwrap_or_unknown()),
+            ErrorKind::InvalidLength { min: _, max} => return Error::RequestTooLargeError(max.map(|m| m/1024).unwrap_or(0)),
+            _ => return Error::BadRequestError(format!("Unknown error kind: {}", error.kind)),
+        }
     }
 }
 

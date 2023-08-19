@@ -1,6 +1,6 @@
 use rocket::form::{FromFormField, ValueField, self};
 
-use crate::image::ImageId;
+use crate::image::image_id::ImageId;
 
 
 #[rocket::async_trait]
