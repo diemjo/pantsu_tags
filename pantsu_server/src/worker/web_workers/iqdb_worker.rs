@@ -2,7 +2,7 @@ use std::time::Duration;
 use rocket::tokio::time::sleep;
 use crate::{worker::worker_connection::WorkerConnectionRx, common::result::Result};
 
-use super::iqdb_client::{IqdbJob, IqdbResponse};
+use super::iqdb_service::{IqdbJob, IqdbResponse};
 
 
 pub async fn worker_run(mut connection_rx: WorkerConnectionRx<IqdbJob, Result<IqdbResponse>>) -> Result<()>{

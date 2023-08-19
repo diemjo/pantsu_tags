@@ -13,7 +13,7 @@ pub fn get_routes() -> Vec<Route> {
 
 #[rocket::get("/images")]
 pub(crate) async fn get_images(context: &State<Context>) -> Result<RawJson<String>> {
-    let sauce = context.client.get_sauce("Aqua".to_string()).await?;
+    let sauce = context.iqdb_service.get_sauce("Aqua".to_string()).await?;
     println!("the sauce of {} is {}", "Aqua", sauce);
     Ok(result::wrap_ok(vec![sauce]))
 }

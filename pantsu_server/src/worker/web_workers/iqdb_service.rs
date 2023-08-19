@@ -12,22 +12,22 @@ pub enum IqdbResponse {
 }
 
 #[async_trait]
-pub trait IqdbClient {
+pub trait IqdbService {
     async fn get_sauce(&self, image: String) -> Result<String>;
 }
 
-pub struct DefaultIqdbClient {
+pub struct DefaultIqdbService {
     worker_connection: WorkerConnectionTx<IqdbJob, Result<IqdbResponse>>,
 }
 
-impl DefaultIqdbClient {
+impl DefaultIqdbService {
     pub fn new(worker_connection: WorkerConnectionTx<IqdbJob, Result<IqdbResponse>>) -> Self {
-        return DefaultIqdbClient { worker_connection }
+        return DefaultIqdbService { worker_connection }
     }
 }
 
 #[async_trait]
-impl IqdbClient for DefaultIqdbClient {
+impl IqdbService for DefaultIqdbService {
     async fn get_sauce(&self, image: String) -> Result<String> {
         let job = IqdbJob::GetSauce(image);
         return match self.worker_connection.send_job(job).await?? {
