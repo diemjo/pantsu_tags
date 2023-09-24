@@ -1,57 +1,50 @@
 use std::future::Future;
 
-use rocket::{tokio::sync::{oneshot, mpsc::{Sender, Receiver, channel}}, futures::StreamExt};
+use rocket::{futures::StreamExt, tokio::sync::{mpsc::{channel, Receiver, Sender}}};
 use tokio_stream::wrappers::ReceiverStream;
 
-use crate::common::{result::Result, error::{self}};
+use crate::common::{error::{self}, result::Result};
 
-struct JobRequest<J, R> {
-    job: J,
-    response_tx: oneshot::Sender<R>,
+pub struct WorkerConnectionTx<J> {
+    request_tx: Sender<J>,
 }
 
-pub struct WorkerConnectionTx<J, R> {
-    request_tx: Sender<JobRequest<J, R>>,
-}
-
-impl <J, R> WorkerConnectionTx<J, R> {
-    pub async fn send_job(&self, job: J) -> Result<R> {
-        let (response_tx, response_rx) = oneshot::channel::<R>();
-        let request = JobRequest {
-            job,
-            response_tx
-        };
-        self.request_tx.send(request).await?;
-        let response: R = response_rx.await?;
-        return Ok(response);
+impl <J> WorkerConnectionTx<J> {
+    pub async fn send_job(&self, job: J) -> Result<()> {
+        self.request_tx.send(job).await?;
+        return Ok(());
     }
 }
 
-pub struct WorkerConnectionRx<J, R> {
-    request_rx: Receiver<JobRequest<J, R>>,
+pub struct WorkerConnectionRx<J> {
+    request_rx: Receiver<J>,
 }
 
-impl <J, R> WorkerConnectionRx<J, R> {
+impl <J> WorkerConnectionRx<J> {
     pub async fn recv_job<F, Fut>(&mut self, job_handler: F) -> Result<()>
     where
         F: FnOnce(J) -> Fut,
-        Fut: Future<Output = R>,
+        Fut: Future<Output = Result<()>>,
     {
-        let job_request = self.request_rx.recv().await.ok_or_else(error::channel_receive_error)?;
-        let resp = job_handler(job_request.job).await;
-        let _ = job_request.response_tx.send(resp).map_err(|_| println!("Warning: Response channel closed")); // todo: log
+        let job = self.request_rx.recv().await.ok_or_else(error::channel_receive_error)?;
+        let handler_result = job_handler(job).await;
+        if let Err(e) = handler_result {
+            println!("Warning: handler failed: {:?}", e) // todo: log
+        };
         Ok(())
     }
 
     pub async fn recv_stream<F, Fut>(self, job_handler: F, num_workers: usize) -> Result<()>
     where
         F: Fn(J) -> Fut,
-        Fut: Future<Output = R>,
+        Fut: Future<Output = Result<()>>,
     {
         ReceiverStream::new(self.request_rx)
-            .map(|job_request| async {
-                let resp = job_handler(job_request.job).await;
-                let _ = job_request.response_tx.send(resp).map_err(|_| println!("Warning: Response channel closed")); // todo: log
+            .map(|job| async {
+                let handler_result = job_handler(job).await;
+                if let Err(e) = handler_result {
+                    println!("Warning: handler failed: {:?}", e) // todo: log
+                };
             })
             .buffered(num_workers)
             .for_each(|_| async {()}).await;
@@ -61,7 +54,7 @@ impl <J, R> WorkerConnectionRx<J, R> {
 
 
 
-pub fn create_worker_connection<J, R>(channel_size: usize) -> (WorkerConnectionTx<J, R>, WorkerConnectionRx<J, R>) {
+pub fn create_worker_connection<J>(channel_size: usize) -> (WorkerConnectionTx<J>, WorkerConnectionRx<J>) {
     let (tx, rx) = channel(channel_size);
     let connection_tx = WorkerConnectionTx {
         request_tx: tx,

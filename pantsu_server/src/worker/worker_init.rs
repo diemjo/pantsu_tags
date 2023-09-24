@@ -7,14 +7,13 @@ use crate::common::result::Result;
 use super::{worker_connection::{create_worker_connection, WorkerConnectionRx, WorkerConnectionTx}, web_workers::{iqdb_worker, iqdb_service::{DefaultIqdbService, IqdbService}}};
 
 
-pub fn create_worker<J, R, F, Fut>(worker_run: F) -> WorkerConnectionTx<J, R>
+pub fn create_worker<J, F, Fut>(worker_run: F) -> WorkerConnectionTx<J>
 where
-    F: FnOnce(WorkerConnectionRx<J, R>) -> Fut + Send + 'static,
+    F: FnOnce(WorkerConnectionRx<J>) -> Fut + Send + 'static,
     Fut: Future<Output = Result<()>> + Send,
-    R: Send + 'static,
     J: Send + 'static,
 {
-    let (connection_tx, connection_rx) = create_worker_connection::<J, R>(128);
+    let (connection_tx, connection_rx) = create_worker_connection::<J>(128);
     task::spawn(async move {
         let _ = worker_run(connection_rx).await;
         println!("oopsie") // todo: log
