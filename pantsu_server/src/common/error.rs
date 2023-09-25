@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use std::iter::Map;
 
 use image::ImageError;
@@ -12,6 +11,7 @@ use rocket::response::Responder;
 use rocket::serde::json::json;
 use rocket::serde::Serialize;
 use rocket::tokio::sync::{mpsc, oneshot};
+use rocket_db_pools::{deadpool_postgres};
 use thiserror::Error;
 
 use crate::common::option_ext::OptionExt;
@@ -61,6 +61,19 @@ pub enum Error {
 
     #[error("Provided image format is unsupported: {0}")]
     UnsupportedImageFormat(String),
+
+    // database
+    #[error("Database sql error: {0}")]
+    DbSqlError(#[from] deadpool_postgres::tokio_postgres::Error),
+
+    #[error("Database pool error: {0}")]
+    DbPoolError(#[from] deadpool_postgres::PoolError),
+
+    #[error("Database pool error: {0}")]
+    DbMigrationError(#[source] deadpool_postgres::tokio_postgres::Error),
+
+    #[error("Program is outdated, database is on version {0}, expected <={1}")]
+    ProgramOutdatedError(usize, usize),
 }
 
 impl <T> From<mpsc::error::SendError<T>> for Error {
