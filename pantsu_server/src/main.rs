@@ -1,25 +1,29 @@
 use rocket::main;
+use tracing::{info, Level};
 
 use worker::web_workers::iqdb_service::IqdbService;
 use worker::worker_init;
 
 use crate::common::result::Result;
 use crate::config::ServerConfig;
+use crate::log::setup_logger;
 
 mod common;
 mod config;
 mod db;
 mod image;
+mod log;
 mod server;
 mod worker;
 
 #[main]
 async fn main() -> Result<()> {
     let config = ServerConfig::load_config()?;
+    setup_logger(Level::TRACE)?;
 
     let iqdb_service = worker_init::init_iqdb();
     let sauce = iqdb_service.get_sauce("Megumin".to_string()).await?;
-    println!("the sauce of {} is {}", "Megumin", sauce);
+    info!("the sauce of {} is {}", "Megumin", sauce);
 
     /*let stream_service = worker_init::init_iqdb();
     let mut sauce_jobs: FuturesUnordered<_> = (1..512)

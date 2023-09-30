@@ -1,7 +1,8 @@
 use rocket::{Build, fairing, Rocket};
-use rocket_db_pools::{Database};
+use rocket_db_pools::Database;
 use rocket_db_pools;
 use rocket_db_pools::deadpool_postgres::Transaction;
+use tracing::{debug, error};
 
 use crate::common::error::Error;
 use crate::common::result::Result;
@@ -9,11 +10,11 @@ use crate::db::PantsuDB;
 
 pub async fn migrate(rocket: Rocket<Build>) -> fairing::Result {
     if let Some(db) = PantsuDB::fetch(&rocket) {
-        println!("checking database version");
+        debug!("checking database version");
         match run_migrations(db).await {
             Ok(()) => Ok(rocket),
             Err(e) => {
-                println!("error: database migrations failed: {:?}", e);
+                error!("error: database migrations failed: {:?}", e);
                 Err(rocket)
             }
         }
@@ -38,18 +39,18 @@ async fn run_migrations<'c>(db: &PantsuDB) -> Result<()> {
         return Err(Error::ProgramOutdatedError(local_version, current_version))
     } else if current_version > local_version {
         let transaction = client.transaction().await?;
-        println!("updating database...");
+        debug!("updating database...");
         for (index, migration) in migrations.iter().enumerate().skip(local_version) {
-            println!("running database update to version {}", index + 1);
+            debug!("running database update to version {}", index + 1);
             run_migration(&transaction, migration).await?;
             /*sqlx::query(format!("PRAGMA user_version={}", index + 1).as_str())
                 .execute(&mut transaction)
                 .await?; */
         }
         transaction.commit().await?;
-        println!("successfully updated database!");
+        debug!("successfully updated database!");
     } else {
-        println!("database is up to date with version '{}'", current_version);
+        debug!("database is up to date with version '{}'", current_version);
     }
 
     Ok(())

@@ -13,6 +13,7 @@ use rocket::serde::Serialize;
 use rocket::tokio::sync::{mpsc, oneshot};
 use rocket_db_pools::{deadpool_postgres};
 use thiserror::Error;
+use tracing::dispatcher::SetGlobalDefaultError;
 
 use crate::common::option_ext::OptionExt;
 use crate::image::image_id::ImageId;
@@ -25,6 +26,10 @@ pub enum Error {
     // config
     #[error("error parsing config: {0}")]
     FigmentError(#[source] figment::Error),
+
+    // log
+    #[error("error setting global logger")]
+    LogInitError(#[from] SetGlobalDefaultError),
 
     // rocket
     #[error("rocket error: {0}")]
