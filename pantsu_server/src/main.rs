@@ -53,17 +53,23 @@ async fn main() -> Result<()> {
         }).await;
     */
 
-    let context = Context {
+    let services = Services {
         iqdb_service,
+    };
+
+    let context = Context {
         config
     };
 
-    server::launch_server(context).await?;
+    server::launch_server(context, services).await?;
 
     Ok(())
 }
 
-pub struct Context {
+pub struct Services {
     iqdb_service: Box<dyn IqdbService + Send + Sync>,
+}
+
+pub struct Context {
     config: ServerConfig,
 }

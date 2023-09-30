@@ -24,7 +24,7 @@ pub fn import(context: &State<Context>, image_form: form::Result<Form<ImageImpor
     import_impl(context, image_form?.into_inner())
 }
 
-pub fn import_impl(context: &Context, image_import: ImageImport) -> Result<content::RawJson<String>> {
+fn import_impl(context: &Context, image_import: ImageImport) -> Result<content::RawJson<String>> {
     let image = PantsuImage::try_from(image_import.image_file)?;
     image_id::verify_image_id(&image_import.image_id, image.id())?;
     // TODO: import: check if file exists (in db), import to image directory, add to db

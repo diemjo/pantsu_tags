@@ -3,14 +3,13 @@ use rocket::fairing::AdHoc;
 use rocket_db_pools::Database;
 
 use crate::common::result::Result;
-use crate::Context;
-use crate::db;
+use crate::{Context, db, Services};
 use crate::db::PantsuDB;
 
 mod forms;
 mod routes;
 
-pub async fn launch_server(context: Context) -> Result<()> {
+pub async fn launch_server(context: Context, services: Services) -> Result<()> {
     let db_config = rocket_db_pools::Config {
         url: "postgres://postgres:postgres@localhost/pantsudb".to_string(),
         min_connections: None,
@@ -30,8 +29,9 @@ pub async fn launch_server(context: Context) -> Result<()> {
     let _rocket = rocket::custom(figment)
         .mount("/api", routes::get_routes())
         .manage(context)
+        .manage(services)
         .attach(PantsuDB::init())
-        .attach(AdHoc::try_on_ignite("DB Migrations", db::migrate))
+        .attach(AdHoc::try_on_ignite("db migrations", db::migrate))
         .launch()
         .await?;
 
