@@ -7,10 +7,21 @@ BEGIN
     )
     THEN
         CREATE SCHEMA migration;
-        CREATE TABLE IF NOT EXISTS migration.migrations (
-            version varchar NOT NULL PRIMARY KEY,
+    END IF;
+    IF NOT EXISTS(
+        SELECT information_schema.tables.table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'migration'
+          AND table_name = 'migrations'
+    )
+    THEN
+        CREATE TABLE migration.migrations (
+            id SERIAL PRIMARY KEY,
+            version varchar NOT NULL,
+            description varchar NOT NULL,
             hash char(16) NOT NULL,
-            sql varchar NOT NULL
+            sql varchar NOT NULL,
+            UNIQUE(version)
         );
     END IF;
 END

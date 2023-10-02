@@ -1,3 +1,3 @@
-SELECT version, hash, sql
+SELECT version, description, hash, sql
 FROM migration.migrations
-ORDER BY version;
+ORDER BY id;

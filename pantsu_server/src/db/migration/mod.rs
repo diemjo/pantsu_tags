@@ -1,4 +1,3 @@
-use lz_fnv::{Fnv1a, FnvHasher};
 use rocket::{Build, fairing, Rocket};
 use rocket_db_pools;
 use rocket_db_pools::Database;
@@ -9,6 +8,9 @@ use tracing::{debug, error};
 use crate::common::error::Error;
 use crate::common::result::Result;
 use crate::db::PantsuDB;
+
+#[macro_use]
+mod migration_macro;
 
 pub async fn migrate(rocket: Rocket<Build>) -> fairing::Result {
     if let Some(db) = PantsuDB::fetch(&rocket) {
@@ -27,16 +29,8 @@ pub async fn migrate(rocket: Rocket<Build>) -> fairing::Result {
 
 async fn run_migrations(db: &PantsuDB) -> Result<()> {
     let migrations: Vec<Migration> = vec![
-        ("v1.0.0", include_str!("migrations/v1.0.0__db_init.sql")),
-    ].into_iter()
-        .map(|(version, sql)|
-            Migration {
-                version: version.to_owned(),
-                hash: calculate_migration_hash(sql),
-                sql: sql.to_owned(),
-            }
-        )
-        .collect();
+        migration!("migrations/v1.0.0__db_init.sql"),
+    ];
 
     let mut client: Client = db.get().await?;
     init_migration_schema(&client).await?;
@@ -68,12 +62,6 @@ async fn run_migrations(db: &PantsuDB) -> Result<()> {
     Ok(())
 }
 
-fn calculate_migration_hash(migration: &str) -> String {
-    let mut hasher = Fnv1a::<u64>::new();
-    hasher.write(migration.as_bytes());
-    format!("{:016x}", hasher.finish())
-}
-
 fn verify_migration(migration: &Migration, applied_migration: &Migration) -> Result<()> {
     if migration.version != applied_migration.version {
         return Err(Error::DbMigrationVersionMissing(migration.version.to_owned()));
@@ -102,7 +90,7 @@ async fn run_migration<'a>(transaction: &Transaction<'a>, migration: Migration) 
     transaction.batch_execute(migration.sql.as_str()).await?;
     transaction.execute(
         include_str!("sql/insert_migration.sql"),
-        &[&migration.version, &migration.hash, &migration.sql],
+        &[&migration.version, &migration.description, &migration.hash, &migration.sql],
     ).await?;
     Ok(())
 }
@@ -110,6 +98,7 @@ async fn run_migration<'a>(transaction: &Transaction<'a>, migration: Migration) 
 #[derive(Debug)]
 struct Migration {
     pub version: String,
+    pub description: String,
     pub hash: String,
     pub sql: String,
 }
@@ -120,8 +109,9 @@ impl TryFrom<Row> for Migration {
     fn try_from(row: Row) -> std::result::Result<Self, Self::Error> {
         Ok(Migration {
             version: row.try_get(0)?,
-            hash: row.try_get(1)?,
-            sql: row.try_get(2)?,
+            description: row.try_get(1)?,
+            hash: row.try_get(2)?,
+            sql: row.try_get(3)?,
         })
     }
 }
