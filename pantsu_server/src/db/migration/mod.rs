@@ -27,7 +27,7 @@ pub async fn migrate(rocket: Rocket<Build>) -> fairing::Result {
 }
 
 async fn run_migrations(db: &PantsuDB) -> Result<()> {
-    let migrations: Vec<Migration> = include_migrations!("pantsu_server/src/db/migration/migrations");
+    let migrations: Vec<Migration> = include_migrations!("pantsu_server/resources/migrations");
     let mut client: Client = db.get().await?;
     init_migration_schema(&client).await?;
     let applied_migrations = get_migrations(&client).await?;
@@ -119,8 +119,8 @@ mod test {
     use super::Migration;
 
     #[test]
-    fn test() {
-        let value: Vec<Migration> = include_migrations!("pantsu_server/src/db/migration/migrations");
-        println!("migrations: {:?}", value)
+    fn test_migration() {
+        let migrations: Vec<Migration> = include_migrations!("pantsu_server/resources/migrations");
+        println!("migrations: {:?}", migrations)
     }
 }
