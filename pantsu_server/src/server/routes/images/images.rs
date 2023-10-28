@@ -17,8 +17,9 @@ pub fn get_routes() -> Vec<Route> {
 
 #[rocket::get("/images")]
 pub(crate) async fn get_images(context: &State<Context>, services: &State<Services>, span: TracingSpan, db: Connection<PantsuDB>) -> Result<RawJson<String>> {
-    let _entered = span.0.enter();
-    get_images_impl(context, services, db).in_current_span().await
+    span.0.in_scope(|| {
+        get_images_impl(context, services, db)
+    }).await
 }
 
 async fn get_images_impl(context: &Context, services: &Services, db: Connection<PantsuDB>) -> Result<RawJson<String>> {
