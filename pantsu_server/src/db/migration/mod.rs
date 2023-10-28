@@ -5,12 +5,11 @@ use rocket_db_pools::deadpool_postgres::{Client, GenericClient, tokio_postgres, 
 use rocket_db_pools::deadpool_postgres::tokio_postgres::Row;
 use tracing::{debug, error};
 
+use pantsu_macros::include_migrations;
+
 use crate::common::error::Error;
 use crate::common::result::Result;
 use crate::db::PantsuDB;
-
-#[macro_use]
-mod migration_macro;
 
 pub async fn migrate(rocket: Rocket<Build>) -> fairing::Result {
     if let Some(db) = PantsuDB::fetch(&rocket) {
@@ -28,10 +27,7 @@ pub async fn migrate(rocket: Rocket<Build>) -> fairing::Result {
 }
 
 async fn run_migrations(db: &PantsuDB) -> Result<()> {
-    let migrations: Vec<Migration> = vec![
-        migration!("migrations/v1.0.0__db_init.sql"),
-    ];
-
+    let migrations: Vec<Migration> = include_migrations!("pantsu_server/src/db/migration/migrations");
     let mut client: Client = db.get().await?;
     init_migration_schema(&client).await?;
     let applied_migrations = get_migrations(&client).await?;
@@ -113,5 +109,18 @@ impl TryFrom<Row> for Migration {
             hash: row.try_get(2)?,
             sql: row.try_get(3)?,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use pantsu_macros::include_migrations;
+
+    use super::Migration;
+
+    #[test]
+    fn test() {
+        let value: Vec<Migration> = include_migrations!("pantsu_server/src/db/migration/migrations");
+        println!("migrations: {:?}", value)
     }
 }

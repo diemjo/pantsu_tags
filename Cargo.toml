@@ -1,5 +1,6 @@
 [workspace]
 
 members = [
+    "pantsu_macros",
     "pantsu_server",
 ]
