@@ -4,7 +4,7 @@ use rocket::tokio::task;
 
 use crate::common::result::Result;
 
-use super::{worker_connection::{create_worker_connection, WorkerConnectionRx, WorkerConnectionTx}, web_workers::{iqdb_worker, iqdb_service::{DefaultIqdbService, IqdbService}}};
+use super::{worker_connection::{create_worker_connection, WorkerConnectionRx, WorkerConnectionTx}, iqdb::{iqdb_worker, iqdb_service::{DefaultIqdbService, IqdbService}}};
 
 
 pub fn create_worker<J, F, Fut>(worker_run: F) -> WorkerConnectionTx<J>

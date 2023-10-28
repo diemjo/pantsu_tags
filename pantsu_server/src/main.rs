@@ -1,7 +1,7 @@
 use rocket::main;
 use tracing::{info, Level};
 
-use worker::web_workers::iqdb_service::IqdbService;
+use worker::iqdb::iqdb_service::IqdbService;
 use worker::worker_init;
 
 use crate::common::result::Result;

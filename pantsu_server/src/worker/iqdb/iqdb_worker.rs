@@ -2,9 +2,9 @@ use std::time::Duration;
 use rocket::tokio::time::sleep;
 use crate::{worker::worker_connection::WorkerConnectionRx, common::result::Result};
 use crate::common::error::Error;
-use crate::worker::web_workers::JobResponder;
 
-use super::iqdb_service::{IqdbJob};
+use crate::worker::JobResponder;
+use super::iqdb_service::IqdbJob;
 
 
 pub async fn worker_run(connection_rx: WorkerConnectionRx<IqdbJob>) -> Result<()>{

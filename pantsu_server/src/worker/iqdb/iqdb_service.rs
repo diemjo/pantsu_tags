@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use rocket::tokio::sync::oneshot;
 
-use crate::{common::{result::Result}, worker::worker_connection::WorkerConnectionTx};
-use crate::worker::web_workers::JobResponder;
+use crate::{common::result::Result, worker::worker_connection::WorkerConnectionTx};
+use crate::worker::JobResponder;
 
 pub enum IqdbJob {
     GetSauce(String, JobResponder<String>)
