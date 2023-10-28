@@ -1,6 +1,7 @@
 use crate::common::error::Error;
 use crate::common::result::Result;
 
+#[derive (Clone)]
 pub enum ImageFormat {
     PNG, JPG,
 }

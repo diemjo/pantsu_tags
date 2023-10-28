@@ -12,7 +12,8 @@ mod routes;
 
 pub async fn launch_server(context: Context, services: Services) -> Result<()> {
     let limits = Limits::default()
-        .limit("bytes", 25.mebibytes()); // image upload as bytes
+        .limit("data-form", 25.mebibytes())
+        .limit("image-file", 24.mebibytes());
 
     let figment = rocket::Config::figment()
         .merge(("port", context.config.server_port))

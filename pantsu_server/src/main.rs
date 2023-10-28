@@ -2,6 +2,7 @@ use rocket::main;
 use tracing::info;
 use tracing_log::log::Level;
 
+use worker::fs::fs_service::FsService;
 use worker::iqdb::iqdb_service::IqdbService;
 use worker::worker_init;
 
@@ -25,6 +26,8 @@ async fn main() -> Result<()> {
     let iqdb_service = worker_init::init_iqdb();
     let sauce = iqdb_service.get_sauce("Megumin".to_string()).await?;
     info!("the sauce of {} is {}", "Megumin", sauce);
+
+    let fs_service = worker_init::init_fs();
 
     /*let stream_service = worker_init::init_iqdb();
     let mut sauce_jobs: FuturesUnordered<_> = (1..512)
@@ -56,6 +59,7 @@ async fn main() -> Result<()> {
 
     let services = Services {
         iqdb_service,
+        fs_service,
     };
 
     let context = Context {
@@ -69,6 +73,7 @@ async fn main() -> Result<()> {
 
 pub struct Services {
     iqdb_service: Box<dyn IqdbService + Send + Sync>,
+    fs_service: Box<dyn FsService + Send + Sync>,
 }
 
 pub struct Context {

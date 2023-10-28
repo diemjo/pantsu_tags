@@ -27,6 +27,9 @@ pub enum Error {
     #[error("error parsing config: {0}")]
     FigmentError(#[source] figment::Error),
 
+    #[error("no limit configured for '{0}'")]
+    NoLimitConfiguredError(String),
+
     // log
     #[error("error setting global logger")]
     LogInitError(#[from] SetGlobalDefaultError),

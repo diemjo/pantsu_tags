@@ -1,3 +1,4 @@
+use std::clone;
 use std::fmt::Display;
 use chrono::{DateTime, Utc};
 use image::GenericImageView;
@@ -11,6 +12,7 @@ pub mod hash;
 pub mod image_format;
 pub mod image_id;
 
+#[derive (Clone)]
 pub struct PantsuImage {
     id: ImageId,
     format: ImageFormat,
