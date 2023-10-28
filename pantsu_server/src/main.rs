@@ -1,5 +1,6 @@
 use rocket::main;
-use tracing::{info, Level};
+use tracing::info;
+use tracing_log::log::Level;
 
 use worker::iqdb::iqdb_service::IqdbService;
 use worker::worker_init;
@@ -19,7 +20,7 @@ mod worker;
 #[main]
 async fn main() -> Result<()> {
     let config = ServerConfig::load_config()?;
-    setup_logger(Level::TRACE)?;
+    setup_logger(Level::Debug)?;
 
     let iqdb_service = worker_init::init_iqdb();
     let sauce = iqdb_service.get_sauce("Megumin".to_string()).await?;
