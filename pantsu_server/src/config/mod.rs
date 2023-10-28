@@ -1,4 +1,6 @@
-use rocket::serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+
+use rocket::{serde::{Deserialize, Serialize}, data::ByteUnit};
 
 mod server_config;
 
@@ -8,4 +10,7 @@ pub struct ServerConfig {
     pub db_username: String,
     pub db_password: String,
     pub db_url: String,
+    pub library_path: PathBuf,
+    pub data_form_limit: ByteUnit,
+    pub image_file_limit: ByteUnit,
 }

@@ -1,4 +1,4 @@
-use rocket::data::{Limits, ToByteUnit};
+use rocket::data::Limits;
 use rocket::fairing::AdHoc;
 use rocket_db_pools::Database;
 
@@ -12,8 +12,8 @@ mod routes;
 
 pub async fn launch_server(context: Context, services: Services) -> Result<()> {
     let limits = Limits::default()
-        .limit("data-form", 25.mebibytes())
-        .limit("image-file", 24.mebibytes());
+        .limit("data-form", context.config.data_form_limit)
+        .limit("image-file", context.config.image_file_limit);
 
     let figment = rocket::Config::figment()
         .merge(("port", context.config.server_port))

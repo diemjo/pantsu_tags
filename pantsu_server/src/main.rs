@@ -1,5 +1,5 @@
 use rocket::main;
-use tracing::info;
+use tracing::{info, debug};
 use tracing_log::log::Level;
 
 use worker::fs::fs_service::FsService;
@@ -20,8 +20,9 @@ mod worker;
 
 #[main]
 async fn main() -> Result<()> {
-    let config = ServerConfig::load_config()?;
     setup_logger(Level::Debug)?;
+    let config = ServerConfig::load_config()?;
+    debug!("{:?}", config);
 
     let iqdb_service = worker_init::init_iqdb();
     let sauce = iqdb_service.get_sauce("Megumin".to_string()).await?;

@@ -27,6 +27,12 @@ pub enum Error {
     #[error("error parsing config: {0}")]
     FigmentError(#[source] figment::Error),
 
+    #[error("required option in the config is missing: {0}")]
+    MissingRequiredConfigOption(String),
+
+    #[error("option in the config is invalid: {0}")]
+    InvalidConfigOption(String),
+
     #[error("no limit configured for '{0}'")]
     NoLimitConfiguredError(String),
 
