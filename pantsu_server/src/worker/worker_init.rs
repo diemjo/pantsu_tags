@@ -4,7 +4,7 @@ use rocket::tokio::task;
 
 use crate::common::result::Result;
 
-use super::{worker_connection::{create_worker_connection, WorkerConnectionRx, WorkerConnectionTx}, iqdb::{iqdb_worker, iqdb_service::{DefaultIqdbService, IqdbService}}};
+use super::{worker_connection::{create_worker_connection, WorkerConnectionRx, WorkerConnectionTx}, iqdb::{iqdb_worker, iqdb_service::{DefaultIqdbService, IqdbService}}, fs::{fs_service::{FsService, self, DefaultFsService}, fs_worker}};
 
 
 pub fn create_worker<J, F, Fut>(worker_run: F) -> WorkerConnectionTx<J>
@@ -25,4 +25,10 @@ pub fn init_iqdb() -> Box<dyn IqdbService + Send + Sync> {
     let connection_tx = create_worker(iqdb_worker::worker_run);
     let iqdb_service = DefaultIqdbService::new(connection_tx);
     return Box::new(iqdb_service);
+}
+
+pub fn init_fs() -> Box<dyn FsService + Send + Sync> {
+    let connection_tx = create_worker(fs_worker::worker_run);
+    let fs_service = DefaultFsService::new(connection_tx);
+    return Box::new(fs_service);
 }
