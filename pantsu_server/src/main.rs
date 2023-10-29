@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
     let sauce = iqdb_service.get_sauce("Megumin".to_string()).await?;
     info!("the sauce of {} is {}", "Megumin", sauce);
 
-    let fs_service = worker_init::init_fs();
+    let fs_service = worker_init::init_fs(config.clone());
 
     /*let stream_service = worker_init::init_iqdb();
     let mut sauce_jobs: FuturesUnordered<_> = (1..512)

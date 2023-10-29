@@ -4,7 +4,7 @@ use rocket::{serde::{Deserialize, Serialize}, data::ByteUnit};
 
 mod server_config;
 
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ServerConfig {
     pub server_port: u16,
     pub db_username: String,

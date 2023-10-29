@@ -7,7 +7,7 @@ use crate::worker::JobResponder;
 use super::iqdb_service::IqdbJob;
 
 
-pub async fn worker_run(connection_rx: WorkerConnectionRx<IqdbJob>) -> Result<()>{
+pub async fn worker_run(connection_rx: WorkerConnectionRx<IqdbJob>, _params: ()) -> Result<()>{
     /*loop {
         connection_rx.recv_job(handle_job).await?;
     }*/
