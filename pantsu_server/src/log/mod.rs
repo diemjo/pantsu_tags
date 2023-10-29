@@ -61,8 +61,8 @@ pub fn filter_layer(level: Level) -> EnvFilter {
         Level::Error => "warn,hyper=off,rustls=off",
         Level::Warn => "warn,rocket::support=info,hyper=off,rustls=off",
         Level::Info => "info,hyper=off,rustls=off",
-        Level::Debug => "debug,hyper=off",
-        Level::Trace => "trace,hyper=off",
+        Level::Debug => "debug,hyper=off,rustls=off,tokio_util=off",
+        Level::Trace => "trace,hyper=off,rustls=off,tokio_util=off",
     };
 
     EnvFilter::try_new(filter_str).expect("filter string must parse")

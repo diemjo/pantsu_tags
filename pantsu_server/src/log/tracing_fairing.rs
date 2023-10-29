@@ -45,12 +45,8 @@ impl Fairing for TracingFairing {
             "",
             request_id = %request_id,
         );
-        /* let span = info_span!(
-            "request",
-            req_id=%request_id,
-        ); */
         span.in_scope(|| {
-            info!("{:?}, {} {}", span.id(), req.method(), req.uri());
+            info!("{} {}", req.method(), req.uri());
         });
 
 
