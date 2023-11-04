@@ -1,3 +1,3 @@
 fn main() {
-    println!("cargo:rerun-if-changed=src/db/migration/migrations");
+    println!("cargo:rerun-if-changed=resources/migrations");
 }
