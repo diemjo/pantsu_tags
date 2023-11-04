@@ -31,10 +31,11 @@ async fn import_impl<'r>(context: &Context, services: &Services, image_import: I
     let image = PantsuImage::try_from(&image_import.image_file.data[..])?;
     image_id::verify_image_id(&image_import.image_id, image.id())?;
 
-    // TODO: import: check if file exists (in db), import to image directory, add to db
+    // TODO: import: check if file exists (in db)
 
     let image_file_arc = Arc::new(image_import.image_file.data);
-    services.fs_service.store_image(image.clone(), image_file_arc).await?;
+    services.fs_service.store_image(image.clone(), image_file_arc.clone()).await?;
 
+    // TODO: add to db
     Ok(wrap_ok(format!("hehe '{}' '{}'", image_import.image_id.format_id_hash(), image.filename())))
 }

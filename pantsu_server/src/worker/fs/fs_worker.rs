@@ -6,6 +6,7 @@ use rocket::tokio::time::sleep;
 use crate::common::error::Error;
 use crate::common::result::Result;
 use crate::config::ServerConfig;
+use crate::fs::library::PantsuLibrary;
 use crate::image::PantsuImage;
 use crate::worker::JobResponder;
 use crate::worker::worker_connection::WorkerConnectionRx;
@@ -23,7 +24,7 @@ async fn handle_job<'r>(job: FsJob, config: &ServerConfig) -> Result<()> {
     sleep(Duration::from_secs(1)).await;
     match job {
         FsJob::StoreImage(image, file_content, responder) => {
-            let answer = handle_store_image(image, file_content);
+            let answer = handle_store_image(image, file_content, config).await;
             respond(responder, answer)?;
         }
     }
@@ -35,6 +36,7 @@ fn respond<T>(responder: JobResponder<T>, response: Result<T>) -> Result<()> {
         .map_err(|_| Error::WorkerCommunicationError("Worker unable to send response to Service".to_string()))
 }
 
-fn handle_store_image<'r>(image: PantsuImage, file_content: Arc<Vec<u8>>) -> Result<String> {
-    Ok("fs_worker Got store image job".to_string())
+async fn handle_store_image<'r>(image: PantsuImage, file_content: Arc<Vec<u8>>, config: &ServerConfig) -> Result<()> {
+    let library = PantsuLibrary::new(config).await?;
+    library.store_image(&image, file_content).await
 }

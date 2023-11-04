@@ -13,6 +13,7 @@ use crate::log::setup_logger;
 mod common;
 mod config;
 mod db;
+mod fs;
 mod image;
 mod log;
 mod server;

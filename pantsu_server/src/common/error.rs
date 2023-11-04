@@ -1,4 +1,5 @@
 use std::iter::Map;
+use std::path::PathBuf;
 
 use image::ImageError;
 use rocket::{form, Response};
@@ -75,6 +76,16 @@ pub enum Error {
 
     #[error("Provided image format is unsupported: {0}")]
     UnsupportedImageFormat(String),
+
+    // filesystem
+    #[error("Library directory '{0}' does not exist and cannot be created due to error: {1}")]
+    LibraryDirectoryError(PathBuf, std::io::Error),
+
+    #[error("Image exists on disk, but should not according to database: {0}")]
+    UnexpectedImageExists(ImageId),
+
+    #[error("Encountered an unexpected IO Error: '{0}'")]
+    IoError(#[from] std::io::Error),
 
     // database
     #[error("Database sql error: {0}")]
