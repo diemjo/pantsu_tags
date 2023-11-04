@@ -1,35 +1,49 @@
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
+use std::num::ParseIntError;
 
 use regex::Regex;
 
 use crate::common::error::Error;
 use crate::common::result::Result;
+use crate::image::hash::{IdHash, PerceptualHash};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImageId {
-    id_hash: String,
-    perceptual_hash: String,
+    id_hash: IdHash,
+    perceptual_hash: PerceptualHash,
 }
 
 impl ImageId {
-    pub fn new(id_hash: String, perceptual_hash: String) -> Self {
+    pub fn new(id_hash: IdHash, perceptual_hash: PerceptualHash) -> Self {
         ImageId {
             id_hash,
             perceptual_hash,
         }
     }
 
-    pub fn get_id_hash(&self) -> &str {
+    pub fn get_id_hash(&self) -> &[u8] {
         &self.id_hash
     }
 
-    pub fn get_perceptual_hash(&self) -> &str {
+    pub fn get_perceptual_hash(&self) -> &[u8] {
         &self.perceptual_hash
     }
 
     pub fn filename_format(&self) -> String {
-        format!("{}-{}", self.id_hash, self.perceptual_hash)
+        format!("{}-{}", self.format_id_hash(), self.format_perceptual_hash())
     }
+
+    pub fn format_id_hash(&self) -> String {
+        hash_to_hex(&self.id_hash)
+    }
+
+    pub fn format_perceptual_hash(&self) -> String {
+        hash_to_hex(&self.perceptual_hash)
+    }
+}
+
+fn hash_to_hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{:02x?}", b)).collect::<String>()
 }
 
 impl TryFrom<&str> for ImageId {
@@ -39,12 +53,24 @@ impl TryFrom<&str> for ImageId {
         let regex = Regex::new(r"^(?<id>[[:xdigit:]]{16})-(?<perceptual>[[:xdigit:]]{36})$").unwrap();
         let captures = regex.captures(value.trim())
             .ok_or_else(|| Error::InvalidImageId(value.to_string()))?;
-
+        let id_hash: IdHash = hex_to_hash::<8>(&captures["id"])?;
+        let perceptual_hash: PerceptualHash = hex_to_hash::<18>(&captures["perceptual"])?;
         Ok(ImageId {
-            id_hash: captures["id"].to_string(),
-            perceptual_hash: captures["perceptual"].to_string(),
+            id_hash,
+            perceptual_hash,
         })
     }
+}
+
+/// should be infallible, because we already check for valid size and content of `str` with regex
+fn hex_to_hash<const SIZE: usize>(str: &str) -> Result<[u8; SIZE]> {
+    (0..2*SIZE)
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&str[i..i+2], 16))
+        .collect::<std::result::Result<Vec<u8>, ParseIntError>>()
+        .map_err(|e| Error::InvalidImageId(str.to_owned()))?
+        .try_into()
+        .map_err(|e| Error::InvalidImageId(str.to_owned()))
 }
 
 impl Display for ImageId {

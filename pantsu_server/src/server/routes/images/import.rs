@@ -36,5 +36,5 @@ async fn import_impl<'r>(context: &Context, services: &Services, image_import: I
     let image_file_arc = Arc::new(image_import.image_file.data);
     services.fs_service.store_image(image.clone(), image_file_arc).await?;
 
-    Ok(wrap_ok(format!("hehe '{}' '{}'", image_import.image_id.get_id_hash(), image.filename())))
+    Ok(wrap_ok(format!("hehe '{}' '{}'", image_import.image_id.format_id_hash(), image.filename())))
 }
