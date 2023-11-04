@@ -1,5 +1,3 @@
-use std::clone;
-use std::fmt::Display;
 use chrono::{DateTime, Utc};
 use image::GenericImageView;
 

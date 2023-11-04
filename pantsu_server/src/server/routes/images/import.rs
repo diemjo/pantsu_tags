@@ -3,8 +3,10 @@ use std::sync::Arc;
 use rocket::{form, Route, State};
 use rocket::form::{Form, FromForm};
 use rocket::response::content;
+use tracing::{Instrument, info};
 
 use crate::common::result::{Result, wrap_ok};
+use crate::log::TracingSpan;
 use crate::server::forms::FormFile;
 use crate::{Context, Services};
 use crate::image::{image_id, PantsuImage};
@@ -23,8 +25,8 @@ pub fn get_routes() -> Vec<Route> {
 }
 
 #[rocket::post("/images/import", data = "<image_form>")]
-pub async fn import(context: &State<Context>, services: &State<Services>, image_form: form::Result<'_, Form<ImageImport>>) -> Result<content::RawJson<String>> {
-    import_impl(context, services, image_form?.into_inner()).await
+pub async fn import(context: &State<Context>, services: &State<Services>, span: TracingSpan, image_form: form::Result<'_, Form<ImageImport>>) -> Result<content::RawJson<String>> {
+    import_impl(context, services, image_form?.into_inner()).instrument(span.0).await
 }
 
 async fn import_impl<'r>(context: &Context, services: &Services, image_import: ImageImport) -> Result<content::RawJson<String>> {
@@ -33,6 +35,7 @@ async fn import_impl<'r>(context: &Context, services: &Services, image_import: I
 
     // TODO: import: check if file exists (in db)
 
+    info!("Store image in library: '{}'", image.filename());
     let image_file_arc = Arc::new(image_import.image_file.data);
     services.fs_service.store_image(image.clone(), image_file_arc.clone()).await?;
 
