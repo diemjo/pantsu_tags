@@ -1,6 +1,5 @@
 use proc_macro::TokenStream;
 use std::fs;
-use std::path::PathBuf;
 
 use lz_fnv::{Fnv1a, FnvHasher};
 use quote::quote;

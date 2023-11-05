@@ -68,9 +68,9 @@ fn hex_to_hash<const SIZE: usize>(str: &str) -> Result<[u8; SIZE]> {
         .step_by(2)
         .map(|i| u8::from_str_radix(&str[i..i+2], 16))
         .collect::<std::result::Result<Vec<u8>, ParseIntError>>()
-        .map_err(|e| Error::InvalidImageId(str.to_owned()))?
+        .map_err(|_| Error::InvalidImageId(str.to_owned()))?
         .try_into()
-        .map_err(|e| Error::InvalidImageId(str.to_owned()))
+        .map_err(|_| Error::InvalidImageId(str.to_owned()))
 }
 
 impl Display for ImageId {
