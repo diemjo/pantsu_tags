@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use rocket::tokio::sync::oneshot;
+use tokio::sync::oneshot;
 
 use crate::{common::result::Result, worker::worker_connection::WorkerConnectionTx};
 use crate::worker::JobResponder;

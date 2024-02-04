@@ -1,7 +1,7 @@
-use std::sync::Arc;
 use std::time::Duration;
+use bytes::Bytes;
 
-use rocket::tokio::time::sleep;
+use tokio::time::sleep;
 
 use crate::common::error::Error;
 use crate::common::result::Result;
@@ -36,7 +36,7 @@ fn respond<T>(responder: JobResponder<T>, response: Result<T>) -> Result<()> {
         .map_err(|_| Error::WorkerCommunicationError("Worker unable to send response to Service".to_string()))
 }
 
-async fn handle_store_image<'r>(image: PantsuImage, file_content: Arc<Vec<u8>>, config: &ServerConfig) -> Result<()> {
+async fn handle_store_image<'r>(image: PantsuImage, file_content: Bytes, config: &ServerConfig) -> Result<()> {
     let library = PantsuLibrary::new(config).await?;
     library.store_image(&image, file_content).await
 }

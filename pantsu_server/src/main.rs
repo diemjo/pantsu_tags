@@ -1,6 +1,5 @@
-use rocket::main;
-use tracing::{info, debug};
-use tracing_log::log::Level;
+use std::sync::Arc;
+use tracing::{info, debug, Level};
 
 use worker::fs::fs_service::FsService;
 use worker::iqdb::iqdb_service::IqdbService;
@@ -19,10 +18,11 @@ mod log;
 mod server;
 mod worker;
 
-#[main]
+#[tokio::main]
 async fn main() -> Result<()> {
-    setup_logger(Level::Debug)?;
+    setup_logger(Level::DEBUG);
     let config = ServerConfig::load_config()?;
+    println!("{:?}", config);
     debug!("{:?}", config);
 
     let iqdb_service = worker_init::init_iqdb();
@@ -59,25 +59,20 @@ async fn main() -> Result<()> {
         }).await;
     */
 
-    let services = Services {
-        iqdb_service,
-        fs_service,
-    };
-
-    let context = Context {
+    let app_state = AppState {
+        iqdb_service: Arc::new(iqdb_service),
+        fs_service: Arc::new(fs_service),
         config
     };
 
-    server::launch_server(context, services).await?;
+    server::launch_server(app_state).await?;
 
     Ok(())
 }
 
-pub struct Services {
-    iqdb_service: Box<dyn IqdbService + Send + Sync>,
-    fs_service: Box<dyn FsService + Send + Sync>,
-}
-
-pub struct Context {
+#[derive(Clone)]
+pub struct AppState {
+    iqdb_service: Arc<dyn IqdbService + Send + Sync>,
+    fs_service: Arc<dyn FsService + Send + Sync>,
     config: ServerConfig,
 }

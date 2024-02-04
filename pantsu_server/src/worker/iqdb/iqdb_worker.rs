@@ -1,5 +1,5 @@
 use std::time::Duration;
-use rocket::tokio::time::sleep;
+use tokio::time::sleep;
 use crate::{worker::worker_connection::WorkerConnectionRx, common::result::Result};
 use crate::common::error::Error;
 

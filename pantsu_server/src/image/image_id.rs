@@ -1,6 +1,11 @@
 use std::fmt::{Display, Formatter};
 use std::num::ParseIntError;
+use std::str::FromStr;
+use async_trait::async_trait;
+use axum::body::Bytes;
 
+use axum_typed_multipart::{FieldMetadata, TryFromChunks, TypedMultipartError};
+use futures::Stream;
 use regex::Regex;
 
 use crate::common::error::Error;
@@ -46,10 +51,10 @@ fn hash_to_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{:02x?}", b)).collect::<String>()
 }
 
-impl TryFrom<&str> for ImageId {
-    type Error = Error;
+impl FromStr for ImageId {
+    type Err = Error;
 
-    fn try_from(value: &str) -> Result<Self> {
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
         let regex = Regex::new(r"^(?<id>[[:xdigit:]]{16})-(?<perceptual>[[:xdigit:]]{36})$").unwrap();
         let captures = regex.captures(value.trim())
             .ok_or_else(|| Error::InvalidImageId(value.to_string()))?;
@@ -79,6 +84,21 @@ impl Display for ImageId {
     }
 }
 
+#[async_trait]
+impl TryFromChunks for ImageId {
+    async fn try_from_chunks(chunks: impl Stream<Item=std::result::Result<Bytes, TypedMultipartError>> + Send + Sync + Unpin, metadata: FieldMetadata) -> std::result::Result<Self, TypedMultipartError> {
+        let field_name = metadata.name.clone().unwrap_or("unknown".to_string());
+        let string = String::try_from_chunks(chunks, metadata).await?;
+        ImageId::from_str(&string).or_else(|e|
+            Err(TypedMultipartError::WrongFieldType {
+                field_name,
+                wanted_type: core::any::type_name::<ImageId>().to_string(),
+                source: e.into()
+            })
+        )
+    }
+}
+
 pub fn verify_image_id(provided: &ImageId, expected: &ImageId) -> Result<()> {
     if provided != expected {
         return Err(Error::ImageIdDoesNotMatch(provided.clone(), expected.clone()))
@@ -88,6 +108,7 @@ pub fn verify_image_id(provided: &ImageId, expected: &ImageId) -> Result<()> {
 
 #[cfg(test)]
 mod test {
+    use std::str::FromStr;
     use crate::common::error::Error;
 
     use super::ImageId;
@@ -95,48 +116,48 @@ mod test {
     #[test]
     fn creates_image_id_from_correct_string() {
         let name = "a8c65b2726296dcc-07807e4fe23cb3c1dca0ce71f382bf81f00f";
-        ImageId::try_from(name).unwrap();
+        ImageId::from_str(name).unwrap();
     }
 
     #[test]
     fn empty_string_is_invalid() {
         let name = "";
-        let image_id = ImageId::try_from(name).unwrap_err();
+        let image_id = ImageId::from_str(name).unwrap_err();
         assert!(matches!(image_id, Error::InvalidImageId(_)));
     }
 
     #[test]
     fn no_dash_is_invalid() {
         let name = "a8c65b2726296dcc07807e4fe23cb3c1dca0ce71f382bf81f00f";
-        let image_id = ImageId::try_from(name).unwrap_err();
+        let image_id = ImageId::from_str(name).unwrap_err();
         assert!(matches!(image_id, Error::InvalidImageId(_)));
     }
 
     #[test]
     fn non_hex_string_is_invalid() {
         let name = "a8c65j2726296dcc-07807e4fe23cb3c1dca0ce71f382bf81f00f";
-        let image_id = ImageId::try_from(name).unwrap_err();
+        let image_id = ImageId::from_str(name).unwrap_err();
         assert!(matches!(image_id, Error::InvalidImageId(_)));
     }
 
     #[test]
     fn too_short_id_hash_is_invalid() {
         let name = "a8c652726296dcc-07807e4fe23cb3c1dca0ce71f382bf81f00f";
-        let image_id = ImageId::try_from(name).unwrap_err();
+        let image_id = ImageId::from_str(name).unwrap_err();
         assert!(matches!(image_id, Error::InvalidImageId(_)));
     }
 
     #[test]
     fn too_short_perceptual_hash_is_invalid() {
         let name = "a8c65b2726296dcc-07807e4fe23cb3c1dca0ce71f382bf8100f";
-        let image_id = ImageId::try_from(name).unwrap_err();
+        let image_id = ImageId::from_str(name).unwrap_err();
         assert!(matches!(image_id, Error::InvalidImageId(_)));
     }
 
     #[test]
     fn excess_string_is_invalid() {
         let name = "a8c65b2726296dcc-07807e4fe23cb3c1dca0ce71f382bf81f00f HelloThere";
-        let image_id = ImageId::try_from(name).unwrap_err();
+        let image_id = ImageId::from_str(name).unwrap_err();
         assert!(matches!(image_id, Error::InvalidImageId(_)));
     }
 }

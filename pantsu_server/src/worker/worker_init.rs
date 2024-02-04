@@ -1,10 +1,10 @@
 use std::future::Future;
 
-use rocket::tokio::task;
+use tokio::task;
 
 use crate::{common::result::Result, config::ServerConfig};
 
-use super::{worker_connection::{create_worker_connection, WorkerConnectionRx, WorkerConnectionTx}, iqdb::{iqdb_worker, iqdb_service::{DefaultIqdbService, IqdbService}}, fs::{fs_service::{FsService, self, DefaultFsService}, fs_worker}};
+use super::{worker_connection::{create_worker_connection, WorkerConnectionRx, WorkerConnectionTx}, iqdb::{iqdb_worker, iqdb_service::{DefaultIqdbService, IqdbService}}, fs::{fs_service::{FsService, DefaultFsService}, fs_worker}};
 
 
 pub fn create_worker<J, F, P, Fut>(worker_run: F, params: P) -> WorkerConnectionTx<J>
@@ -22,14 +22,14 @@ where
     return connection_tx;
 }
 
-pub fn init_iqdb() -> Box<dyn IqdbService + Send + Sync> {
+pub fn init_iqdb() -> impl IqdbService + Send + Sync {
     let connection_tx = create_worker(iqdb_worker::worker_run, ());
     let iqdb_service = DefaultIqdbService::new(connection_tx);
-    return Box::new(iqdb_service);
+    return iqdb_service;
 }
 
-pub fn init_fs(config: ServerConfig) -> Box<dyn FsService + Send + Sync> {
+pub fn init_fs(config: ServerConfig) -> impl FsService + Send + Sync {
     let connection_tx = create_worker(fs_worker::worker_run, config);
     let fs_service = DefaultFsService::new(connection_tx);
-    return Box::new(fs_service);
+    return fs_service;
 }

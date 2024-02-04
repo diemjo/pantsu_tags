@@ -1,20 +1,17 @@
 use chrono::Local;
-use rocket::yansi::Paint;
-use tracing_log::log::Level;
-use tracing_subscriber::{EnvFilter, Layer};
+use tracing::{Level};
 use tracing_subscriber::field::MakeExt;
-use tracing_subscriber::fmt::format::Writer;
+use tracing_subscriber::filter::{Targets};
+use tracing_subscriber::fmt::format::{Writer};
 use tracing_subscriber::fmt::time::FormatTime;
-use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::Layer;
+use tracing_subscriber::layer::{SubscriberExt};
 use tracing_subscriber::registry::LookupSpan;
+use tracing_subscriber::util::SubscriberInitExt;
+use yansi::Paint;
 
-pub use tracing_fairing::TracingFairing;
-pub use tracing_fairing::TracingSpan;
-
-use crate::common::result::Result;
-
-mod request_id;
-mod tracing_fairing;
+pub(crate) mod request_id;
+// mod tracing_fairing;
 
 struct LogTimeFormat;
 
@@ -24,26 +21,22 @@ impl FormatTime for LogTimeFormat {
     }
 }
 
-pub fn setup_logger(log_level: Level) -> Result<()> {
-    tracing::subscriber::set_global_default(
-        tracing_subscriber::registry()
-            .with(logging_layer())
-            .with(filter_layer(log_level))
-    )?;
-    Ok(())
+pub fn setup_logger(log_level: Level) {
+    tracing_subscriber::registry()
+        .with(logging_layer())
+        .with(filter_layer(log_level))
+        .init();
 }
 
 // shamelessly copied most of it from
 // https://github.com/somehowchris/rocket-tracing-fairing-example/blob/main/src/main.rs
 pub fn logging_layer<S>() -> impl Layer<S> where S: tracing::Subscriber, S: for<'span> LookupSpan<'span> {
     let field_format = tracing_subscriber::fmt::format::debug_fn(|writer, field, value| {
-        if field.name() == "request_id" {
-            write!(writer, "{:?}", Paint::new(value).dimmed())
-        }
-        else if field.name() == "message" {
-            write!(writer, "{:?}", Paint::new(value).bold())
-        } else {
-            write!(writer, "{}: {:?}", field, Paint::default(value).bold())
+        match field.name() {
+            "request_id" => write!(writer, "{:?}", Paint::new(value).dim()),
+            "message" => write!(writer, "{:?}", Paint::new(value).bold()),
+            // name if name.starts_with("log.") => Ok(()),
+            _ => write!(writer, "{}: {:?}", field, Paint::new(value).bold()),
         }
     })
         .delimited(", ")
@@ -51,19 +44,18 @@ pub fn logging_layer<S>() -> impl Layer<S> where S: tracing::Subscriber, S: for<
 
     tracing_subscriber::fmt::layer()
         .fmt_fields(field_format)
+        .with_file(false)
+        .with_line_number(false)
+        .with_target(false)
         // .event_format(PantsuFormatter)
         .with_timer(LogTimeFormat)
         .with_test_writer()
 }
 
-pub fn filter_layer(level: Level) -> EnvFilter {
-    let filter_str = match level {
-        Level::Error => "warn,hyper=off,rustls=off",
-        Level::Warn => "warn,rocket::support=info,hyper=off,rustls=off",
-        Level::Info => "info,hyper=off,rustls=off",
-        Level::Debug => "debug,hyper=off,rustls=off,tokio_util=off",
-        Level::Trace => "trace,hyper=off,rustls=off,tokio_util=off",
-    };
-
-    EnvFilter::try_new(filter_str).expect("filter string must parse")
+pub fn filter_layer(level: Level) -> Targets {
+    let filter = Targets::new()
+        .with_target("tower_http::trace::on_request", Level::DEBUG)
+        .with_target("tower_http::trace::on_response", Level::DEBUG)
+        .with_default(level);
+    return filter;
 }

@@ -1,5 +1,5 @@
 [toolchain]
-channel = "stable-2023-03-28"
+channel = "1.75.0"
 components = [ ]
 targets = [ ]
 profile = "default"

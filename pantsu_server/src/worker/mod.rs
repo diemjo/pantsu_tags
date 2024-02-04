@@ -1,4 +1,4 @@
-use rocket::tokio::sync::oneshot;
+use tokio::sync::oneshot;
 use crate::common::result::Result;
 
 pub mod iqdb;

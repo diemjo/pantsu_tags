@@ -1,19 +1,18 @@
-use rocket::http::Status;
-use rocket::Request;
-use rocket::request::{FromRequest, Outcome};
+use axum::body::Body;
+use axum::extract::Request;
+use tower_http::request_id::RequestId;
+use tracing::{error_span, Span};
 
-#[derive(Clone, Debug)]
-pub struct RequestId<T = String>(pub T);
-
-// Allows a route to access the request id
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for RequestId {
-    type Error = ();
-
-    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, ()> {
-        match &*request.local_cache(|| RequestId::<Option<String>>(None)) {
-            RequestId(Some(request_id)) => Outcome::Success(RequestId(request_id.to_owned())),
-            RequestId(None) => Outcome::Failure((Status::InternalServerError, ())),
-        }
-    }
+pub fn request_id_tracing_span(request: &Request<Body>) -> Span {
+    let request_id = request
+        .extensions()
+        .get::<RequestId>()
+        .map(|r| r.header_value().to_str().unwrap_or("invalid"))
+        .unwrap_or_else(|| "unknown");
+    error_span!(
+        "request",
+        id = %request_id,
+        method = %request.method(),
+        uri = %request.uri(),
+    )
 }

@@ -1,34 +1,16 @@
-use rocket::data::Limits;
-use rocket::fairing::AdHoc;
-use rocket_db_pools::Database;
-
 use crate::common::result::Result;
-use crate::{Context, db, Services};
-use crate::db::PantsuDB;
-use crate::log::TracingFairing;
+use crate::AppState;
 
-mod forms;
+// mod forms;
+mod multipart;
 mod routes;
 
-pub async fn launch_server(context: Context, services: Services) -> Result<()> {
-    let limits = Limits::default()
-        .limit("data-form", context.config.data_form_limit)
-        .limit("image-file", context.config.image_file_limit);
+pub async fn launch_server(shared_state: AppState) -> Result<()> {
+    let listener = tokio::net::TcpListener::bind(("0.0.0.0", shared_state.config.server_port)).await?;
 
-    let figment = rocket::Config::figment()
-        .merge(("port", context.config.server_port))
-        .merge(("limits", limits))
-        .merge(("databases.pantsu_db", db::config()));
+    let app = routes::get_router(shared_state);
 
-    let _rocket = rocket::custom(figment)
-        .mount("/api", routes::get_routes())
-        .manage(context)
-        .manage(services)
-        .attach(PantsuDB::init())
-        .attach(TracingFairing)
-        .attach(AdHoc::try_on_ignite("db migrations", db::migrate))
-        .launch()
-        .await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }
